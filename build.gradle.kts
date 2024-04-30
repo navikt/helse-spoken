@@ -1,16 +1,10 @@
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "1.9.23"
 }
 
-val ktorVersion = "2.3.7"
-val logbackClassicVersion = "1.4.14"
+val ktorVersion = "2.3.10"
+val logbackClassicVersion = "1.5.6"
 val logbackEncoderVersion = "7.4"
-val jacksonVersion = "2.16.1"
-val junitJupiterVersion = "5.10.2"
-val wiremockVersion = "3.3.1"
-val kafkaVersion = "3.6.1"
-val jsonAssertVersion = "1.5.1"
-val handlebarsVersion = "4.4.0"
 
 val mainClass = "no.nav.helse.spoken.AppKt"
 
@@ -21,13 +15,9 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-cio:$ktorVersion")
     implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion") {
+    implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktorVersion") {
         exclude(group = "junit")
     }
-    implementation("io.ktor:ktor-server-auth-jvm:$ktorVersion")
-    implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktorVersion")
 }
 
 repositories {
@@ -76,7 +66,7 @@ tasks {
 
         doLast {
             configurations.runtimeClasspath.get().forEach {
-                val file = File("$buildDir/libs/${it.name}")
+                val file = File("${layout.buildDirectory.get()}/libs/${it.name}")
                 if (!file.exists())
                     it.copyTo(file)
             }
