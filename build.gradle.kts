@@ -5,6 +5,8 @@ plugins {
 val ktorVersion = "2.3.10"
 val logbackClassicVersion = "1.5.6"
 val logbackEncoderVersion = "7.4"
+val tbdLibsVersion = "2024.04.30-10.57-21d60764"
+val jacksonVersion = "2.17.0"
 
 val mainClass = "no.nav.helse.spoken.AppKt"
 
@@ -18,6 +20,9 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktorVersion") {
         exclude(group = "junit")
     }
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    implementation("com.github.navikt.tbd-libs:signed-jwt:$tbdLibsVersion")
+
 }
 
 repositories {
