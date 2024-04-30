@@ -1,5 +1,6 @@
 package no.nav.helse.spoken
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.navikt.tbd_libs.signedjwt.SignedJwt
 import io.ktor.server.application.*
 import io.ktor.util.*
@@ -7,6 +8,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.*
 
 private fun Map<String, Any>.plusIfMissing(pair: Pair<String, Any>) = if (keys.contains(pair.first)) this else this.plus(pair)
 private fun ApplicationCall.fraQuery(prefix: String) = request.queryParameters.toMap().filterKeys { it.startsWith(prefix) }.map { (key, value) -> key.removePrefix(prefix) to value.first() }.toMap()
@@ -25,13 +27,8 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
 
     open fun defaultParameters(parameters: Map<String, Any>): Map<String, Any> = parameters
 
-    fun assertion(call: ApplicationCall) = signedJwt.generate(
-        headers = defaultHeaders(call.headers),
-        claims = defaultClaims(call.claims)
-    )
-
     fun token(call: ApplicationCall): String {
-        val assertion = assertion(call)
+        val assertion = signedJwt.generate(headers = defaultHeaders(call.headers), claims = defaultClaims(call.claims))
 
         val body = defaultParameters(call.params)
             .plus("grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer")
@@ -43,7 +40,27 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()
 
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body()
+        val token = httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body()
+
+        return objectMapper.createObjectNode().apply {
+            replace("assertion", jwtInfo(assertion))
+            replace("token", jwtInfo(token))
+        }.toString()
+    }
+
+    private companion object {
+        private val objectMapper = jacksonObjectMapper()
+        private val base64Decoder = Base64.getUrlDecoder()
+        private fun jwtInfo(jwt: String) = objectMapper.createObjectNode().apply {
+            put("raw", jwt)
+            replace("headers", partOrNull(jwt, 0) )
+            replace("claims", partOrNull(jwt, 1))
+        }
+
+        private fun partOrNull(jwt: String, part: Int) = kotlin.runCatching { objectMapper.readTree(base64Decoder.decode(jwt.split(".")[part])) }.fold(
+            onSuccess = { it },
+            onFailure = { objectMapper.nullNode() }
+        )
     }
 }
 

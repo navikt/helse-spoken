@@ -3,6 +3,7 @@ package no.nav.helse.spoken
 import com.auth0.jwk.JwkProviderBuilder
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.ktor.http.ContentType.Application.Json
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -41,18 +42,10 @@ internal fun Application.spoken() {
         get("/isalive") { call.respondText("ALIVE!") }
         get("/isready") { call.respondText("READY!") }
         authenticate {
-            get("/velkommen") {
-                call.respondText("Heihei!")
-            }
-            get("/assertion") {
-                val issuerQuery = call.request.queryParameters["issuer"] ?: return@get call.respondText("Mangler issuer query.", status = BadRequest)
-                val issuer = issuers[issuerQuery] ?: return@get call.respondText("Støtter ikke issuer $issuerQuery. Støtter kun ${issuers.keys.joinToString()}", status = BadRequest)
-                call.respondText(issuer.assertion(call))
-            }
             get("/token") {
                 val issuerQuery = call.request.queryParameters["issuer"] ?: return@get call.respondText("Mangler issuer query.", status = BadRequest)
                 val issuer = issuers[issuerQuery] ?: return@get call.respondText("Støtter ikke issuer $issuerQuery. Støtter kun ${issuers.keys.joinToString()}", status = BadRequest)
-                call.respondText(issuer.token(call))
+                call.respondText(issuer.token(call), contentType = Json)
             }
         }
     }
