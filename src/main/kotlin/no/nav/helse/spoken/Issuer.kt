@@ -21,32 +21,31 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
     private val signedJwt = SignedJwt(jwk)
     private val httpClient = HttpClient.newHttpClient()
 
-    open fun defaultHeaders(headers: Map<String, Any>) = headers
+    open fun headers(customHeaders: Map<String, Any>) = customHeaders
 
-    abstract fun defaultClaims(claims: Map<String, Any>): Map<String, Any>
+    abstract fun claims(customClaims: Map<String, Any>): Map<String, Any>
 
-    open fun defaultParameters(parameters: Map<String, Any>): Map<String, Any> = parameters
+    abstract fun parameters(customParameters: Map<String, Any>, assertion: String): Map<String, Any>
 
     fun token(call: ApplicationCall): String {
-        val assertion = signedJwt.generate(headers = defaultHeaders(call.headers), claims = defaultClaims(call.claims))
+        val assertion = signedJwt.generate(headers = headers(call.headers), claims = claims(call.claims))
 
-        val body = defaultParameters(call.params)
-            .plus("grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer")
-            .plus("assertion" to assertion)
-            .entries.joinToString(separator = "&") { (key, value) -> "$key=$value"}
+        val body = parameters(call.params, assertion).entries.joinToString(separator = "&") { (key, value) -> "$key=$value"}
 
         val request = HttpRequest.newBuilder(tokenEndpoint)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .POST(HttpRequest.BodyPublishers.ofString(body))
             .build()
 
-        val token = httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body()
+        val tokenResponse = json(httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body())
+        val accessToken = tokenResponse.path("access_token").asText()
 
         return objectMapper.createObjectNode().apply {
             replace("assertion", jwtInfo(assertion))
-            replace("token", jwtInfo(token))
-            put("token_body", body)
+            replace("access_token", jwtInfo(accessToken))
+            put("token_request", body)
             put("token_endpoint", "$tokenEndpoint")
+            replace("token_response", tokenResponse)
         }.toString()
     }
 
@@ -58,6 +57,10 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
             replace("headers", partOrNull(jwt, 0) )
             replace("claims", partOrNull(jwt, 1))
         }
+        private fun json(raw: String) = kotlin.runCatching { objectMapper.readTree(raw) }.fold(
+            onSuccess = { it },
+            onFailure = { objectMapper.nullNode() }
+        )
 
         private fun partOrNull(jwt: String, part: Int) = kotlin.runCatching { objectMapper.readTree(base64Decoder.decode(jwt.split(".")[part])) }.fold(
             onSuccess = { it },
@@ -67,18 +70,24 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
 }
 
 internal class Maskinporten(jwk: Map<String, Any?>, private val clientId: String, tokenEndpoint: URI): Issuer(jwk, tokenEndpoint) {
-    override fun defaultClaims(claims: Map<String, Any>) = claims
+    override fun claims(customClaims: Map<String, Any>) = customClaims
         .plusIfMissing("aud" to "https://test.maskinporten.no/")
         .plusIfMissing("iss" to clientId)
+
+    override fun parameters(customParameters: Map<String, Any>, assertion: String) = customParameters
+        .plusIfMissing("grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer")
+        .plusIfMissing("assertion" to assertion)
 }
 
 internal class Azure(jwk: Map<String, Any?>, private val clientId: String, tokenEndpoint: URI): Issuer(jwk, tokenEndpoint) {
-    override fun defaultClaims(claims: Map<String, Any>) = claims
+    override fun claims(customClaims: Map<String, Any>) = customClaims
         .plusIfMissing("aud" to "$tokenEndpoint")
         .plusIfMissing("sub" to clientId)
         .plusIfMissing("iss" to clientId)
 
-    override fun defaultParameters(parameters: Map<String, Any>) = parameters
+    override fun parameters(customParameters: Map<String, Any>, assertion: String) = customParameters
         .plusIfMissing("client_id" to clientId)
         .plusIfMissing("grant_type" to "client_credentials")
+        .plusIfMissing("client_assertion" to assertion)
+        .plusIfMissing("client_assertion_type" to "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
 }
