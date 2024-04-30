@@ -45,6 +45,8 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
         return objectMapper.createObjectNode().apply {
             replace("assertion", jwtInfo(assertion))
             replace("token", jwtInfo(token))
+            put("token_body", body)
+            put("token_endpoint", "$tokenEndpoint")
         }.toString()
     }
 
@@ -78,4 +80,5 @@ internal class Azure(jwk: Map<String, Any?>, private val clientId: String, token
 
     override fun defaultParameters(parameters: Map<String, Any>) = parameters
         .plusIfMissing("client_id" to clientId)
+        .plusIfMissing("grant_type" to "client_credentials")
 }
