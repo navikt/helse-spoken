@@ -14,7 +14,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.net.URI
 
-private val String.env get() = checkNotNull(System.getenv(this)) { "Fant ikke environment variable $this" }
+internal val String.env get() = checkNotNull(System.getenv(this)) { "Fant ikke environment variable $this" }
 private val String.jwk get(): Map<String, Any?> = objectMapper.readValue(this.env)
 private val objectMapper = jacksonObjectMapper()
 

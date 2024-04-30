@@ -1,5 +1,6 @@
 package no.nav.helse.spoken
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.navikt.tbd_libs.signedjwt.SignedJwt
 import io.ktor.server.application.*
@@ -27,6 +28,8 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
 
     abstract fun parameters(customParameters: Map<String, Any>, assertion: String): Map<String, Any>
 
+    open fun response(objectNode: ObjectNode) = objectNode
+
     fun token(call: ApplicationCall): String {
         val assertion = signedJwt.generate(headers = headers(call.headers), claims = claims(call.claims))
 
@@ -40,13 +43,14 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
         val tokenResponse = json(httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body())
         val accessToken = tokenResponse.path("access_token").asText()
 
-        return objectMapper.createObjectNode().apply {
+        val response =  objectMapper.createObjectNode().apply {
             replace("assertion", jwtInfo(assertion))
             replace("access_token", jwtInfo(accessToken))
             put("token_request", body)
             put("token_endpoint", "$tokenEndpoint")
             replace("token_response", tokenResponse)
-        }.toString()
+        }
+        return response(response).toString()
     }
 
     private companion object {
@@ -71,12 +75,15 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
 
 internal class Maskinporten(jwk: Map<String, Any?>, private val clientId: String, tokenEndpoint: URI): Issuer(jwk, tokenEndpoint) {
     override fun claims(customClaims: Map<String, Any>) = customClaims
-        .plusIfMissing("aud" to "https://test.maskinporten.no/")
+        .plusIfMissing("aud" to "MASKINPORTEN_ISSUER".env)
         .plusIfMissing("iss" to clientId)
 
     override fun parameters(customParameters: Map<String, Any>, assertion: String) = customParameters
         .plusIfMissing("grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer")
         .plusIfMissing("assertion" to assertion)
+
+    override fun response(objectNode: ObjectNode): ObjectNode = objectNode
+        .put("available_scopes", "MASKINPORTEN_SCOPES".env)
 }
 
 internal class Azure(jwk: Map<String, Any?>, private val clientId: String, tokenEndpoint: URI): Issuer(jwk, tokenEndpoint) {
