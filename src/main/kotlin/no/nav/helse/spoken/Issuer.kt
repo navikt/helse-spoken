@@ -60,15 +60,9 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
             replace("headers", partOrNull(jwt, 0) )
             replace("claims", partOrNull(jwt, 1))
         }
-        private fun json(raw: String) = kotlin.runCatching { objectMapper.readTree(raw) }.fold(
-            onSuccess = { it },
-            onFailure = { objectMapper.nullNode() }
-        )
+        private fun json(raw: String) = kotlin.runCatching { objectMapper.readTree(raw) }.getOrElse { objectMapper.nullNode() }
 
-        private fun partOrNull(jwt: String, part: Int) = kotlin.runCatching { objectMapper.readTree(base64Decoder.decode(jwt.split(".")[part])) }.fold(
-            onSuccess = { it },
-            onFailure = { objectMapper.nullNode() }
-        )
+        private fun partOrNull(jwt: String, part: Int) = kotlin.runCatching { objectMapper.readTree(base64Decoder.decode(jwt.split(".")[part])) }.getOrElse { objectMapper.nullNode() }
     }
 }
 
