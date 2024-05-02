@@ -15,7 +15,7 @@ Her setter bare fantasien begrensninger.
 
 `header_<$y>` -> `y` legges til som en header i assertione som sendes til issuer.
 
-`paramter_<$z>` -> `z` legges til som parameter på token-request til issuer.
+`parameter_<$z>` -> `z` legges til som parameter på token-request til issuer.
 
 ## Issuers
 
