@@ -17,7 +17,6 @@ private val ApplicationCall.headers get() = fraQuery("header_")
 private val ApplicationCall.claims get() = fraQuery("claim_")
 private val ApplicationCall.params get() = fraQuery("parameter_")
 
-
 sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
     private val signedJwt = SignedJwt(jwk)
     private val httpClient = HttpClient.newHttpClient()
@@ -73,9 +72,15 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
     }
 }
 
-internal class Maskinporten(jwk: Map<String, Any?>, private val clientId: String, tokenEndpoint: URI): Issuer(jwk, tokenEndpoint) {
+internal class Maskinporten(
+    jwk: Map<String, Any?>,
+    tokenEndpoint: URI,
+    private val clientId: String,
+    private val issuer: String,
+    private val tilgjengeligeScopes: String
+): Issuer(jwk, tokenEndpoint) {
     override fun claims(customClaims: Map<String, Any>) = customClaims
-        .plusIfMissing("aud" to "MASKINPORTEN_ISSUER".env)
+        .plusIfMissing("aud" to issuer)
         .plusIfMissing("iss" to clientId)
 
     override fun parameters(customParameters: Map<String, Any>, assertion: String) = customParameters
@@ -83,10 +88,14 @@ internal class Maskinporten(jwk: Map<String, Any?>, private val clientId: String
         .plusIfMissing("assertion" to assertion)
 
     override fun response(objectNode: ObjectNode): ObjectNode = objectNode
-        .put("available_scopes", "MASKINPORTEN_SCOPES".env)
+        .put("available_scopes", tilgjengeligeScopes)
 }
 
-internal class Azure(jwk: Map<String, Any?>, private val clientId: String, tokenEndpoint: URI): Issuer(jwk, tokenEndpoint) {
+internal class Azure(
+    jwk: Map<String, Any?>,
+    tokenEndpoint: URI,
+    private val clientId: String,
+): Issuer(jwk, tokenEndpoint) {
     override fun claims(customClaims: Map<String, Any>) = customClaims
         .plusIfMissing("aud" to "$tokenEndpoint")
         .plusIfMissing("sub" to clientId)
