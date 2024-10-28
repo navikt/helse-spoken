@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "1.9.23"
 }
 
-val ktorVersion = "2.3.10"
+val ktorVersion = "2.3.12"
 val logbackClassicVersion = "1.5.6"
 val logbackEncoderVersion = "7.4"
 val tbdLibsVersion = "2024.04.30-10.57-21d60764"
