@@ -2,10 +2,10 @@ plugins {
     kotlin("jvm") version "2.0.21"
 }
 
-val ktorVersion = "2.3.12"
+val ktorVersion = "3.0.1"
 val logbackClassicVersion = "1.5.6"
 val logbackEncoderVersion = "7.4"
-val tbdLibsVersion = "2024.04.30-10.57-21d60764"
+val tbdLibsVersion = "2024.11.12-11.09-16cf2599"
 val jacksonVersion = "2.17.0"
 
 val mainClass = "no.nav.helse.spoken.AppKt"
