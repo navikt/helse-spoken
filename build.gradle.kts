@@ -5,7 +5,7 @@ plugins {
 val ktorVersion = "3.0.1"
 val logbackClassicVersion = "1.5.12"
 val logbackEncoderVersion = "8.0"
-val tbdLibsVersion = "2024.11.12-20.46-e1fd6a25"
+val tbdLibsVersion = "2024.11.14-07.56-63a8564f"
 val jacksonVersion = "2.18.1"
 
 val mainClass = "no.nav.helse.spoken.AppKt"
