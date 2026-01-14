@@ -52,8 +52,6 @@ spec:
       consumes:
         - name: "nav:sykepenger:fellesordningenforafp.read"
         - name: "nav:sykepenger:avtalefestetpensjon.read"
-  secureLogs:
-    enabled: true
   observability:
     logging:
       destinations:
