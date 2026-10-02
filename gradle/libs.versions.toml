@@ -8,7 +8,7 @@ ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt-jvm", version.re
 ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 
-jackson-module-kotlin = "com.fasterxml.jackson.module:jackson-module-kotlin:2.18.3"
+jackson-module-kotlin = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.3"
 
 logback-classic = "ch.qos.logback:logback-classic:1.5.25"
 logstash-logback-encoder = "net.logstash.logback:logstash-logback-encoder:8.0"
