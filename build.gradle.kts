@@ -1,77 +1,19 @@
 plugins {
-    kotlin("jvm") version "2.3.0"
+    alias(libs.plugins.sykepenger.deployable)
 }
 
-val ktorVersion = "3.2.3"
-val logbackClassicVersion = "1.5.25"
-val logbackEncoderVersion = "8.0"
-val tbdLibsVersion = "2026.01.22-09.16-1d3f6039"
-val jacksonVersion = "2.18.3"
-
-val mainClass = "no.nav.helse.spoken.AppKt"
+sykepengerDeployable {
+    mainClass = "no.nav.helse.spoken.AppKt"
+}
 
 dependencies {
-    implementation("ch.qos.logback:logback-classic:$logbackClassicVersion")
-    implementation("net.logstash.logback:logstash-logback-encoder:$logbackEncoderVersion")
+    implementation(libs.logback.classic)
+    implementation(libs.logstash.logback.encoder)
 
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-cio:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth-jwt-jvm:$ktorVersion") {
+    implementation(libs.bundles.ktor.server)
+    implementation(libs.ktor.server.auth.jwt) {
         exclude(group = "junit")
     }
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
-    implementation("com.github.navikt.tbd-libs:signed-jwt:$tbdLibsVersion")
-
-}
-
-// Sett opp repositories basert på om vi kjører i CI eller ikke
-// Jf. https://github.com/navikt/utvikling/blob/main/docs/teknisk/Konsumere%20biblioteker%20fra%20Github%20Package%20Registry.md
-repositories {
-    mavenCentral()
-    if (providers.environmentVariable("GITHUB_ACTIONS").orNull == "true") {
-        maven {
-            url = uri("https://maven.pkg.github.com/navikt/maven-release")
-            credentials {
-                username = "token"
-                password = providers.environmentVariable("GITHUB_TOKEN").orNull!!
-            }
-        }
-    } else {
-        maven("https://repo.adeo.no/repository/github-package-registry-navikt/")
-    }
-}
-
-kotlin {
-    jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of("21"))
-    }
-}
-
-tasks {
-    withType<Test> {
-        useJUnitPlatform()
-        testLogging {
-            events("passed", "skipped", "failed")
-        }
-    }
-
-    named<Jar>("jar") {
-        archiveBaseName.set("app")
-
-        manifest {
-            attributes["Main-Class"] = mainClass
-            attributes["Class-Path"] = configurations.runtimeClasspath.get().joinToString(separator = " ") {
-                it.name
-            }
-        }
-
-        doLast {
-            configurations.runtimeClasspath.get().forEach {
-                val file = File("${layout.buildDirectory.get()}/libs/${it.name}")
-                if (!file.exists())
-                    it.copyTo(file)
-            }
-        }
-    }
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.tbdLibs.signedJwt)
 }
