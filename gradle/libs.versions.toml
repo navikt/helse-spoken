@@ -1,5 +1,5 @@
 [versions]
-ktor = "3.2.3"
+ktor = "3.6.0"
 sykepengerGradlePlugins = "20261001.1830"
 
 [libraries]
@@ -11,7 +11,7 @@ ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 jackson-module-kotlin = "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.3"
 
 logback-classic = "ch.qos.logback:logback-classic:1.6.4"
-logstash-logback-encoder = "net.logstash.logback:logstash-logback-encoder:8.0"
+logstash-logback-encoder = "net.logstash.logback:logstash-logback-encoder:9.0"
 
 tbdLibs-signedJwt = "com.github.navikt.tbd-libs:signed-jwt:20261002.1227"
 
