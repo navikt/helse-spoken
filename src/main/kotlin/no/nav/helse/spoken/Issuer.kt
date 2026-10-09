@@ -12,12 +12,22 @@ import java.net.http.HttpResponse
 import java.util.*
 
 private fun Map<String, Any>.plusIfMissing(pair: Pair<String, Any>) = if (keys.contains(pair.first)) this else this.plus(pair)
-private fun ApplicationCall.fraQuery(prefix: String) = request.queryParameters.toMap().filterKeys { it.startsWith(prefix) }.map { (key, value) -> key.removePrefix(prefix) to value.first() }.toMap()
+
+private fun ApplicationCall.fraQuery(prefix: String) =
+    request.queryParameters
+        .toMap()
+        .filterKeys { it.startsWith(prefix) }
+        .map { (key, value) -> key.removePrefix(prefix) to value.first() }
+        .toMap()
+
 private val ApplicationCall.headers get() = fraQuery("header_")
 private val ApplicationCall.claims get() = fraQuery("claim_")
 private val ApplicationCall.params get() = fraQuery("parameter_")
 
-sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
+sealed class Issuer(
+    jwk: Map<String, Any?>,
+    protected val tokenEndpoint: URI,
+) {
     private val signedJwt = SignedJwt(jwk)
     private val httpClient = HttpClient.newHttpClient()
 
@@ -25,44 +35,56 @@ sealed class Issuer(jwk: Map<String, Any?>, protected val tokenEndpoint: URI) {
 
     abstract fun claims(customClaims: Map<String, Any>): Map<String, Any>
 
-    abstract fun parameters(customParameters: Map<String, Any>, assertion: String): Map<String, Any>
+    abstract fun parameters(
+        customParameters: Map<String, Any>,
+        assertion: String,
+    ): Map<String, Any>
 
     open fun response(objectNode: ObjectNode) = objectNode
 
     fun token(call: ApplicationCall): String {
         val assertion = signedJwt.generate(headers = headers(call.headers), claims = claims(call.claims))
 
-        val body = parameters(call.params, assertion).entries.joinToString(separator = "&") { (key, value) -> "$key=$value"}
+        val body = parameters(call.params, assertion).entries.joinToString(separator = "&") { (key, value) -> "$key=$value" }
 
-        val request = HttpRequest.newBuilder(tokenEndpoint)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build()
+        val request =
+            HttpRequest
+                .newBuilder(tokenEndpoint)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build()
 
         val tokenResponse = json(httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body())
         val accessToken = tokenResponse.path("access_token").asText()
 
-        val response =  objectMapper.createObjectNode().apply {
-            replace("assertion", jwtInfo(assertion))
-            replace("access_token", jwtInfo(accessToken))
-            put("token_request", body)
-            put("token_endpoint", "$tokenEndpoint")
-            replace("token_response", tokenResponse)
-        }
+        val response =
+            objectMapper.createObjectNode().apply {
+                replace("assertion", jwtInfo(assertion))
+                replace("access_token", jwtInfo(accessToken))
+                put("token_request", body)
+                put("token_endpoint", "$tokenEndpoint")
+                replace("token_response", tokenResponse)
+            }
         return response(response).toString()
     }
 
     private companion object {
         private val objectMapper = jacksonObjectMapper()
         private val base64Decoder = Base64.getUrlDecoder()
-        private fun jwtInfo(jwt: String) = objectMapper.createObjectNode().apply {
-            put("raw", jwt)
-            replace("headers", partOrNull(jwt, 0) )
-            replace("claims", partOrNull(jwt, 1))
-        }
+
+        private fun jwtInfo(jwt: String) =
+            objectMapper.createObjectNode().apply {
+                put("raw", jwt)
+                replace("headers", partOrNull(jwt, 0))
+                replace("claims", partOrNull(jwt, 1))
+            }
+
         private fun json(raw: String) = kotlin.runCatching { objectMapper.readTree(raw) }.getOrElse { objectMapper.nullNode() }
 
-        private fun partOrNull(jwt: String, part: Int) = kotlin.runCatching { objectMapper.readTree(base64Decoder.decode(jwt.split(".")[part])) }.getOrElse { objectMapper.nullNode() }
+        private fun partOrNull(
+            jwt: String,
+            part: Int,
+        ) = kotlin.runCatching { objectMapper.readTree(base64Decoder.decode(jwt.split(".")[part])) }.getOrElse { objectMapper.nullNode() }
     }
 }
 
@@ -71,31 +93,40 @@ internal class Maskinporten(
     tokenEndpoint: URI,
     private val clientId: String,
     private val issuer: String,
-    private val tilgjengeligeScopes: String
-): Issuer(jwk, tokenEndpoint) {
-    override fun claims(customClaims: Map<String, Any>) = customClaims
-        .plusIfMissing("aud" to issuer)
-        .plusIfMissing("iss" to clientId)
+    private val tilgjengeligeScopes: String,
+) : Issuer(jwk, tokenEndpoint) {
+    override fun claims(customClaims: Map<String, Any>) =
+        customClaims
+            .plusIfMissing("aud" to issuer)
+            .plusIfMissing("iss" to clientId)
 
-    override fun parameters(customParameters: Map<String, Any>, assertion: String) = customParameters
+    override fun parameters(
+        customParameters: Map<String, Any>,
+        assertion: String,
+    ) = customParameters
         .plusIfMissing("grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer")
         .plusIfMissing("assertion" to assertion)
 
-    override fun response(objectNode: ObjectNode): ObjectNode = objectNode
-        .put("available_scopes", tilgjengeligeScopes)
+    override fun response(objectNode: ObjectNode): ObjectNode =
+        objectNode
+            .put("available_scopes", tilgjengeligeScopes)
 }
 
 internal class Azure(
     jwk: Map<String, Any?>,
     tokenEndpoint: URI,
     private val clientId: String,
-): Issuer(jwk, tokenEndpoint) {
-    override fun claims(customClaims: Map<String, Any>) = customClaims
-        .plusIfMissing("aud" to "$tokenEndpoint")
-        .plusIfMissing("sub" to clientId)
-        .plusIfMissing("iss" to clientId)
+) : Issuer(jwk, tokenEndpoint) {
+    override fun claims(customClaims: Map<String, Any>) =
+        customClaims
+            .plusIfMissing("aud" to "$tokenEndpoint")
+            .plusIfMissing("sub" to clientId)
+            .plusIfMissing("iss" to clientId)
 
-    override fun parameters(customParameters: Map<String, Any>, assertion: String) = customParameters
+    override fun parameters(
+        customParameters: Map<String, Any>,
+        assertion: String,
+    ) = customParameters
         .plusIfMissing("client_id" to clientId)
         .plusIfMissing("grant_type" to "client_credentials")
         .plusIfMissing("client_assertion" to assertion)

@@ -33,20 +33,23 @@ internal fun Application.spoken() {
         }
     }
 
-    val issuers = mapOf(
-        "maskinporten" to Maskinporten(
-            jwk = "MASKINPORTEN_CLIENT_JWK".jwk,
-            clientId = "MASKINPORTEN_CLIENT_ID".env,
-            tokenEndpoint = URI("MASKINPORTEN_TOKEN_ENDPOINT".env),
-            issuer = "MASKINPORTEN_ISSUER".env,
-            tilgjengeligeScopes = "MASKINPORTEN_SCOPES".env
-        ),
-        "azure" to Azure(
-            jwk = "AZURE_APP_JWK".jwk,
-            clientId = "AZURE_APP_CLIENT_ID".env,
-            tokenEndpoint = URI("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT".env)
+    val issuers =
+        mapOf(
+            "maskinporten" to
+                Maskinporten(
+                    jwk = "MASKINPORTEN_CLIENT_JWK".jwk,
+                    clientId = "MASKINPORTEN_CLIENT_ID".env,
+                    tokenEndpoint = URI("MASKINPORTEN_TOKEN_ENDPOINT".env),
+                    issuer = "MASKINPORTEN_ISSUER".env,
+                    tilgjengeligeScopes = "MASKINPORTEN_SCOPES".env,
+                ),
+            "azure" to
+                Azure(
+                    jwk = "AZURE_APP_JWK".jwk,
+                    clientId = "AZURE_APP_CLIENT_ID".env,
+                    tokenEndpoint = URI("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT".env),
+                ),
         )
-    )
 
     routing {
         get("/isalive") { call.respondText("ALIVE!") }
@@ -60,5 +63,3 @@ internal fun Application.spoken() {
         }
     }
 }
-
-
