@@ -1,10 +1,10 @@
 package no.nav.helse.spoken
 
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.navikt.tbd_libs.signedjwt.SignedJwt
 import io.ktor.server.application.*
 import io.ktor.util.*
+import tools.jackson.databind.node.ObjectNode
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -55,7 +55,7 @@ sealed class Issuer(
                 .build()
 
         val tokenResponse = json(httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body())
-        val accessToken = tokenResponse.path("access_token").asText()
+        val accessToken = tokenResponse.path("access_token").asString()
 
         val response =
             objectMapper.createObjectNode().apply {

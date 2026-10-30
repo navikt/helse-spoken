@@ -1,8 +1,6 @@
 package no.nav.helse.spoken
 
 import com.auth0.jwk.JwkProviderBuilder
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.http.ContentType.Application.Json
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.server.application.*
@@ -12,6 +10,8 @@ import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import tools.jackson.module.kotlin.jacksonObjectMapper
+import tools.jackson.module.kotlin.readValue
 import java.net.URI
 
 private val String.env get() = checkNotNull(System.getenv(this)) { "Fant ikke environment variable $this" }
